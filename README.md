@@ -8,7 +8,7 @@ This repository contains our experiments with the transformer architecture for r
 
 ## Data
 
-- Prosit: data/prosit*
+- Prosit: data/prosit_rt_updated/*
 
 - AutoRT: data/PXD006109*
 

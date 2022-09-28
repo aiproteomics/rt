@@ -9,5 +9,5 @@ dropout	0.1
 epochs	2000
 vocab_size	23
 max_length	31
-min_val	-2.247466762650705
-max_val	2.843562104743324
+min_val	-2.223810622817974
+max_val	2.8322903433005333

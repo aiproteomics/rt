@@ -83,11 +83,11 @@ class data_prosit():
     @classmethod
     def load_training(cls, max_sequence_length = 30):
 
-        x_train = np.load(DATA_DIR + '/prosit_rt_x_train.npy')
-        y_train = np.load(DATA_DIR + '/prosit_rt_y_train.npy')
+        x_train = np.load(DATA_DIR + '/prosit_rt_updated/X_train.npy')
+        y_train = np.load(DATA_DIR + '/prosit_rt_updated/Y_train.npy')
 
-        x_val = np.load(DATA_DIR + '/prosit_rt_x_val.npy')
-        y_val = np.load(DATA_DIR + '/prosit_rt_y_val.npy')
+        x_val = np.load(DATA_DIR + '/prosit_rt_updated/X_validation.npy')
+        y_val = np.load(DATA_DIR + '/prosit_rt_updated/Y_validation.npy')
 
         return (x_train, y_train), (x_val, y_val)
 
@@ -95,8 +95,8 @@ class data_prosit():
     @classmethod
     def load_testing(cls, max_sequence_length = 30):
 
-        x_test = np.load(DATA_DIR + '/prosit_rt_x_test.npy')
-        y_test = np.load(DATA_DIR + '/prosit_rt_y_test.npy')
+        x_test = np.load(DATA_DIR + '/prosit_rt_updated/X_holdout.npy')
+        y_test = np.load(DATA_DIR + '/prosit_rt_updated/Y_holdout.npy')
         
         return (x_test, y_test)
 
