@@ -16,6 +16,10 @@ This repository contains our experiments with the transformer architecture for r
 
 - Independent test set: data/PXD019038*
 
+- Phospho dataset for training, validation, and hold out: data/HumanPhosphoproteomeDB_rt*
+
+- Phospho datasets for testing: data/test-PXD006637.csv, data/test-PXD013453.csv, and data/test-PXD019113.csv
+
 ## Trained models
 
 - Prosit: models/prosit/
@@ -23,6 +27,8 @@ This repository contains our experiments with the transformer architecture for r
 - AutoRT: models/autort/
 
 - DeepDIA: models/deepdia/
+
+- phosho: models/phospho/
 
 ## Example usages
 

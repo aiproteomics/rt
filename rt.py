@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2022 Thang V Pham
+# Copyright 2023 Thang V Pham
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,6 +36,25 @@ def min_max_scale_rev(x, min, max):
     old_x = x * (max - min) + min
     return old_x
 
+class data_phospho():
+
+    @classmethod
+    def load_training_transformer(cls):
+        
+        x_train = np.load(DATA_DIR + '/HumanPhosphoproteomeDB_rt_x_train.npy')
+        y_train = np.load(DATA_DIR + '/HumanPhosphoproteomeDB_rt_y_train.npy')
+
+        x_val = np.load(DATA_DIR + '/HumanPhosphoproteomeDB_rt_x_val.npy')
+        y_val = np.load(DATA_DIR + '/HumanPhosphoproteomeDB_rt_y_val.npy')
+
+        return (x_train, y_train), (x_val, y_val)
+
+    @classmethod
+    def load_testing_transformer(cls):
+        x_test = np.load(DATA_DIR + '/HumanPhosphoproteomeDB_rt_x_test.npy')
+        y_test = np.load(DATA_DIR + '/HumanPhosphoproteomeDB_rt_y_test.npy')
+
+        return (x_test, y_test)
 
 class data_autort():
 
@@ -226,7 +245,7 @@ class data_generics():
             s = re.sub('M\(ox\)', 'o', s)
             if s.find('(') < 0 and (min_sequence_length <= len(s) <= max_sequence_length):
                 if has_rt :
-                    selected_peptides[s] = row['rt']
+                    selected_peptides[s] = row[rt_header]
                 else :
                     selected_peptides[s] = 0
 
@@ -243,6 +262,88 @@ class data_generics():
         int2seq = '_ACDEFGHIKLMNPQRSTVWYo'
         int2seqf = lambda x : ''.join([int2seq[c] for c in x if c > 0])
         return ([int2seqf(x) for x in X])
+
+    @classmethod
+    def sequence_to_integer_phospho(cls, sequences, max_sequence_length = 60):
+
+        deepphospho_ALPHABET = {
+            "A": 1,
+            "C": 2,
+            "D": 3,
+            "E": 4,
+            "F": 5,
+            "G": 6,
+            "H": 7,
+            "I": 8,
+            "K": 9,
+            "L": 10,
+            "M": 11,
+            "N": 12,
+            "P": 13,
+            "Q": 14,
+            "R": 15,
+            "S": 16,
+            "T": 17,
+            "V": 18,
+            "W": 19,
+            "Y": 20,
+            "1": 21,
+            "2": 22,
+            "3": 23,
+            "4": 24,
+            "*": 25
+        }
+
+        array = np.zeros([len(sequences), max_sequence_length], dtype=int)
+        for i, sequence in enumerate(sequences):
+            for j, s in enumerate(re.sub('@', '', sequence)):
+                array[i, j] = deepphospho_ALPHABET[s]
+        return array
+
+    @classmethod
+    def load_phospho(cls, filename, seq_header = 'IntPep', rt_header = 'iRT'):
+
+        min_sequence_length = 6
+        max_sequence_length = 60
+
+        d = pd.read_csv(filename)
+
+        if seq_header not in d:
+            print('No column in the data: ' + seq_header)
+            exit(0)
+
+        has_rt = rt_header in d
+
+
+        print(d.shape[0], ' peptides')
+
+        selected_peptides = {}
+        for index, row in d.iterrows():
+            s = row[seq_header]
+            s = re.sub('@', '', s)
+            if s.find('(') < 0 and (min_sequence_length <= len(s) <= max_sequence_length):
+                if has_rt :
+                    selected_peptides[s] = row[rt_header]
+                else :
+                    selected_peptides[s] = 0
+            else:
+                print(s)
+
+
+        print(len(selected_peptides), ' peptides selected')
+
+        df = pd.DataFrame.from_dict(selected_peptides, orient = 'index', columns = ['rt'])
+
+        x = cls.sequence_to_integer_phospho(df.index.values, max_sequence_length)
+
+        return (x, df['rt'].to_numpy())
+
+    @classmethod
+    def integer_to_sequence_phospho(cls, X):
+        int2seq = '_ACDEFGHIKLMNPQRSTVWY1234*'
+        int2seqf = lambda x : ''.join([int2seq[c] for c in x if c > 0])
+        return ([int2seqf(x) for x in X])
+
 #endregion
 
 
@@ -607,6 +708,12 @@ def main():
                 y_train = min_max_scale(y_train, min = min_val, max = max_val)
                 y_val = min_max_scale(y_val, min = min_val, max = max_val)
 
+            elif args.data == 'phospho':
+                (x_train, y_train), (x_val, y_val) = data_phospho.load_training_transformer()
+
+                min_val = 0.0
+                max_val = 1.0
+
             else:
                 print('Unknown data')
                 exit(0)
@@ -946,6 +1053,8 @@ def main():
                     x_test, y_test = data_generics.load_deepdia(args.input, seq_header = args.header)                
                 elif para.loc['data', 'value'] == 'autort':
                     x_test, y_test = data_generics.load_autort(args.input, seq_header = args.header)
+                elif para.loc['data', 'value'] == 'phospho':
+                    x_test, y_test = data_generics.load_phospho(args.input, seq_header = args.header)
                 else:
                     print('Unknown model')
                     exit(0)
@@ -953,7 +1062,10 @@ def main():
                 print('Unknown data')
                 exit(0)
 
-            all_peps = data_generics.integer_to_sequence(x_test)
+            if (args.data == '' and para.loc['data', 'value'] == 'phospho'):
+                all_peps = data_generics.integer_to_sequence_phospho(x_test)
+            else:    
+                all_peps = data_generics.integer_to_sequence(x_test)
 
             vocab_size = int(para.loc['vocab_size', 'value'])
             x_test = np.concatenate((np.full((x_test.shape[0], 1), vocab_size - 1), x_test), axis = 1) # CLS is vocab_size-1
@@ -999,6 +1111,13 @@ def main():
 
                 a = y_test * 100
                 b = y_predict * 100
+
+            elif para.loc['data', 'value'] == 'phospho':
+                
+                y_predict = min_max_scale_rev(y_predict, min = min_val, max = max_val)
+
+                a = y_test
+                b = y_predict
                 
             print('\nModel epoch =', model_epoch, '; MAE =', np.median(np.abs(a-b)), '\n\n')            
 
@@ -1011,5 +1130,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
